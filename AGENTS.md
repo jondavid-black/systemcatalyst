@@ -46,6 +46,7 @@ Python project (greenfield - no source code yet)
 - Single test: `uv run pytest tests/test_specific.py::TestClass::test_method`
 - Linting: `uv run ruff check .`
 - Formatting: `uv run ruff format .`
+- Type Checking: `uv run pyright`
 - Documentation: `uv run mkdocs serve` (dev) / `uv run mkdocs build` (prod)
 
 ## Code Style Guidelines
