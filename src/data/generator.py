@@ -9,6 +9,7 @@ from sqlalchemy import (
     Float,
     DateTime,
     JSON,
+    Enum,
 )
 from sqlalchemy.schema import CreateTable
 from sqlalchemy.dialects import mysql
@@ -30,7 +31,21 @@ class SchemaGenerator:
     def create_table_from_schema(self, schema: TableSchema) -> Table:
         columns = []
         for col_def in schema.columns:
-            col_type = self.type_mapping[col_def.data_type]
+            if col_def.data_type == DataType.ENUM:
+                if not col_def.enum_values:
+                    raise ValueError(
+                        f"Column {col_def.name} is of type ENUM but has no enum_values defined"
+                    )
+                # For SQLAlchemy Enum, we need to pass the allowed values
+                # We also set the name of the enum type to avoid conflicts
+                enum_name = (
+                    col_def.enum_name
+                    if col_def.enum_name
+                    else f"{schema.name}_{col_def.name}_enum"
+                )
+                col_type = Enum(*col_def.enum_values, name=enum_name)
+            else:
+                col_type = self.type_mapping[col_def.data_type]
 
             # Construct column arguments
             col_args: Dict[str, Any] = {

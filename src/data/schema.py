@@ -10,6 +10,13 @@ class DataType(str, Enum):
     FLOAT = "float"
     TIMESTAMP = "timestamp"
     JSON = "json"
+    ENUM = "enum"
+
+
+class EnumSchema(BaseModel):
+    name: str = Field(..., description="The name of the enum")
+    values: List[str] = Field(..., description="The allowed values for the enum")
+    description: Optional[str] = Field(None, description="Description of the enum")
 
 
 class ColumnSchema(BaseModel):
@@ -20,6 +27,12 @@ class ColumnSchema(BaseModel):
     unique: bool = Field(False, description="Whether this column must be unique")
     default: Optional[str] = Field(
         None, description="Default value for the column (as a string)"
+    )
+    enum_values: Optional[List[str]] = Field(
+        None, description="List of allowed values for ENUM type"
+    )
+    enum_name: Optional[str] = Field(
+        None, description="Name of the ENUM type (if applicable)"
     )
 
 
