@@ -9,6 +9,7 @@ dependencies = [
     "flet[all]>=0.28.3",
     "pip>=25.3",
     "pydantic>=2.12.5",
+    "ruamel-yaml>=0.18.16",
     "sqlalchemy>=2.0.45",
     "uvicorn>=0.38.0",
 ]
