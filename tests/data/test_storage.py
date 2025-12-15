@@ -1,4 +1,7 @@
 import pytest
+from ruamel.yaml import YAMLError
+
+from src.data.schema import ColumnSchema, DataType, EnumSchema, TableSchema
 from src.data.storage import YAMLStorage
 
 
@@ -63,7 +66,52 @@ def test_invalid_yaml(yaml_storage, tmp_path):
     file_path = tmp_path / "invalid.yaml"
     file_path.write_text("key: value: invalid", encoding="utf-8")
 
-    from ruamel.yaml import YAMLError
-
     with pytest.raises(YAMLError):
         yaml_storage.load(file_path)
+
+
+def test_schema_serialization(yaml_storage, tmp_path):
+    """Test saving and loading Pydantic schema models."""
+    file_path = tmp_path / "schema.yaml"
+
+    # Create test data
+    enum_schema = EnumSchema(
+        name="Status",
+        values=["ACTIVE", "INACTIVE", "PENDING"],
+        description="User status",
+    )
+
+    column_schema = ColumnSchema(
+        name="id", data_type=DataType.INTEGER, primary_key=True, nullable=False
+    )
+
+    table_schema = TableSchema(
+        name="users", columns=[column_schema], description="User table"
+    )
+
+    # Save data (convert to dict first as storage handles raw types)
+    # We save a dictionary containing both schemas to test complex structure
+    # Note: model_dump(mode='json') handles Enum serialization
+    data = {
+        "enums": [enum_schema.model_dump(mode="json")],
+        "tables": [table_schema.model_dump(mode="json")],
+    }
+
+    yaml_storage.save(data, file_path)
+
+    # Load and verify
+    loaded_data = yaml_storage.load(file_path)
+
+    # Verify we can reconstruct models
+    loaded_enum = EnumSchema.model_validate(loaded_data["enums"][0])
+    loaded_table = TableSchema.model_validate(loaded_data["tables"][0])
+
+    assert loaded_enum == enum_schema
+    assert loaded_table == table_schema
+
+    # Verify specific fields
+    assert loaded_enum.name == "Status"
+    assert "ACTIVE" in loaded_enum.values
+    assert loaded_table.name == "users"
+    assert loaded_table.columns[0].name == "id"
+    assert loaded_table.columns[0].data_type == DataType.INTEGER
