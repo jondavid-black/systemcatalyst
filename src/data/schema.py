@@ -13,6 +13,40 @@ class DataType(str, Enum):
     ENUM = "enum"
 
 
+class DataCategory(str, Enum):
+    CONTROLLED = "controlled"
+    DYNAMIC = "dynamic"
+
+
+class DataSensitivity(str, Enum):
+    PUBLIC = "public"
+    INTERNAL = "internal"
+    CONFIDENTIAL = "confidential"
+    PII = "pii"
+    RESTRICTED = "restricted"
+
+
+class RetentionPolicy(str, Enum):
+    INDEFINITE = "indefinite"
+    THIRTY_DAYS = "30_days"
+    FISCAL_YEAR = "fiscal_year"
+
+
+class TableUIHints(BaseModel):
+    display_name: Optional[str] = Field(
+        default=None, description="Human-readable name for the table"
+    )
+    icon: Optional[str] = Field(
+        default=None, description="Icon identifier (e.g. mdi-account)"
+    )
+    default_sort_column: Optional[str] = Field(
+        default=None, description="Column to sort by default"
+    )
+    summary_columns: List[str] = Field(
+        default_factory=list, description="Columns to show in summary views"
+    )
+
+
 class EnumSchema(BaseModel):
     name: str = Field(description="The name of the enum")
     values: List[str] = Field(description="The allowed values for the enum")
@@ -47,4 +81,28 @@ class TableSchema(BaseModel):
     columns: List[ColumnSchema] = Field(description="List of columns in the table")
     description: Optional[str] = Field(
         default=None, description="Description of the table"
+    )
+    category: DataCategory = Field(
+        default=DataCategory.CONTROLLED,
+        description="Category of data (controlled or dynamic)",
+    )
+    namespace: Optional[str] = Field(
+        default=None, description="Namespace for organizing related content"
+    )
+    owner: Optional[str] = Field(
+        default=None, description="Owner or steward team responsible for this data"
+    )
+    sensitivity: DataSensitivity = Field(
+        default=DataSensitivity.INTERNAL,
+        description="Sensitivity classification of the data",
+    )
+    retention: RetentionPolicy = Field(
+        default=RetentionPolicy.INDEFINITE, description="Data retention policy"
+    )
+    ui_hints: Optional[TableUIHints] = Field(
+        default=None, description="UI rendering hints for the table"
+    )
+    composite_unique_constraints: List[List[str]] = Field(
+        default_factory=list,
+        description="List of column groups that must be unique together",
     )

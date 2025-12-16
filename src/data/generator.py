@@ -10,6 +10,7 @@ from sqlalchemy import (
     DateTime,
     JSON,
     Enum,
+    UniqueConstraint,
 )
 from sqlalchemy.schema import CreateTable
 from sqlalchemy.dialects import mysql
@@ -60,7 +61,33 @@ class SchemaGenerator:
             column = Column(col_def.name, col_type, **col_args)
             columns.append(column)
 
-        return Table(schema.name, self.metadata, *columns)
+        # Build composite unique constraints
+        args = [*columns]
+        for unique_group in schema.composite_unique_constraints:
+            args.append(UniqueConstraint(*unique_group))
+
+        # Build table comment with metadata
+        comment_parts = []
+        if schema.description:
+            comment_parts.append(schema.description)
+
+        metadata_parts = [f"Category: {schema.category.value}"]
+
+        if schema.namespace:
+            metadata_parts.append(f"Namespace: {schema.namespace}")
+
+        if schema.owner:
+            metadata_parts.append(f"Owner: {schema.owner}")
+
+        metadata_parts.append(f"Sensitivity: {schema.sensitivity.value}")
+
+        metadata_parts.append(f"Retention: {schema.retention.value}")
+
+        comment_parts.append(f"({', '.join(metadata_parts)})")
+
+        comment = " ".join(comment_parts)
+
+        return Table(schema.name, self.metadata, *args, comment=comment)
 
     def generate_ddl(self, tables: List[TableSchema]) -> str:
         """Generates SQL DDL for a list of table schemas."""
