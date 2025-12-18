@@ -1,0 +1,84 @@
+# Feature Specification: Workflow Definitions
+
+**Feature Branch**: `001-workflow-definitions`
+**Created**: Wed Dec 17 2025
+**Status**: Draft
+**Input**: User description: "We need a good way to create workflow definitions. Workflows consist of a trigger and a sequence of activities needed to achieve a desired outcome. Workflow definitions should be traceable to use case definitions. Workflows should support visualization with activity diagrams. Workflows should support trigger blocks, process blocks, decision blocks, branch, join, and completion blocks. Our initial focus will be defining the data elements needed to capture and manage workflow definitions."
+
+## Clarifications
+### Session 2025-12-17
+- Q: How does the system handle cycles and disconnected blocks (islands)? → A: **Permissive Save, Explicit Validate**. The system allows saving "invalid" structures (islands, loops) to support drafts. A separate validation function reports these as errors.
+- Q: Visualization implementation strategy? → A: **Deferred**. Visualization requirements removed from current scope to focus on data elements.
+- Q: Process Node Data Payload? → A: **Descriptive + Optional Reference**. Process blocks contain `label`, `description`, and an optional `handler_ref` (string) for future execution binding.
+- Q: Scope of "Creation" interface (MVP)? → A: **Models + Script**. Implementation is limited to Data Models (Pydantic/SQLAlchemy) and a demonstration script (`seed_workflow.py`). API/CLI are out of scope.
+
+## User Scenarios & Testing *(mandatory)*
+
+<!--
+  IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
+  Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
+  you should still have a viable MVP (Minimum Viable Product) that delivers value.
+-->
+
+### User Story 1 - Define Workflow Data Structure (Priority: P1)
+
+As a System Designer, I want to define the structure of a workflow using various block types (Trigger, Process, Decision, Branch, Join, Completion) so that I can map out complex business logic.
+
+**Why this priority**: This is the core functionality. Without the ability to define the nodes and structure, the workflow system has no purpose.
+
+**Independent Test**: Can be tested by running a script that instantiates the data models with at least one of each block type and verifying the structure is valid.
+
+**Acceptance Scenarios**:
+
+1. **Given** the data models, **When** I instantiate a "Trigger" block via script, **Then** it is accepted as valid.
+2. **Given** the data models, **When** I instantiate "Process", "Decision", "Branch", "Join", or "Completion" blocks, **Then** they store their specific properties (Label, Description, HandlerRef).
+3. **Given** a "Decision" block, **When** I define outgoing paths, **Then** the model captures the logic/conditions for each path.
+4. **Given** two blocks, **When** I connect them, **Then** the model records the directional relationship.
+
+---
+
+### User Story 2 - Link Workflow to Use Case (Priority: P2)
+
+As a Product Manager, I want to link a workflow definition to a specific Use Case Definition so that I can trace implementation logic back to requirements.
+
+**Why this priority**: Ensures traceability, a key requirement stated in the description.
+
+**Independent Test**: Instantiate a workflow model with a Use Case ID/Reference. Verify the field is present and accessible.
+
+**Acceptance Scenarios**:
+
+1. **Given** a workflow definition model, **When** I specify a Use Case ID, **Then** the model stores this association.
+
+### Edge Cases / Error Handling
+
+- **Disconnected Blocks (Islands)**: The data model allows saving workflows with islands (draft state). The validation logic flags these as errors/warnings.
+- **Cycles (Loops)**: The data model allows saving workflows with cycles. The validation logic detects and reports cycles.
+- **Missing References**: If a referenced Use Case ID does not exist, the system should allow the link but flag it as a "broken reference" during validation.
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+- **FR-001**: System MUST provide Pydantic and SQLAlchemy models for Workflow Definitions.
+- **FR-002**: Workflow Definitions MUST include a traceable reference to a Use Case Definition (e.g., Use Case ID).
+- **FR-003**: The data model MUST support a "Trigger" block type, representing the workflow initiation.
+- **FR-004**: The data model MUST support "Process" blocks containing a label, description, and optional execution reference.
+- **FR-005**: The data model MUST support "Decision" blocks with capability to define multiple distinct outgoing paths based on conditions.
+- **FR-006**: The data model MUST support "Branch" and "Join" blocks to represent parallel execution paths.
+- **FR-007**: The data model MUST support "Completion" blocks representing the end of a flow.
+- **FR-008**: The data model MUST explicitly capture the directed connections (edges) between blocks to establish sequence and flow.
+- **FR-010**: The system MUST provide a validation function to detect structural issues (islands, cycles).
+
+### Key Entities *(include if feature involves data)*
+
+- **WorkflowDefinition**: The container for a workflow, including ID, name, description, and Use Case reference.
+- **WorkflowNode**: Represents a single block in the workflow. Attributes: ID, Type (Trigger, Process, Decision, Branch, Join, Completion), Label, Properties (Description, HandlerRef).
+- **WorkflowEdge**: Represents the flow between nodes. Attributes: SourceNodeID, TargetNodeID, Label/Condition (for decisions).
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: A workflow definition containing all 6 supported block types can be instantiated and validated via script with 100% data integrity.
+- **SC-003**: 100% of created workflows have a valid field/reference for a Use Case Definition.
+- **SC-004**: Validation function correctly identifies 100% of disconnected nodes and cycles in test dataset.
